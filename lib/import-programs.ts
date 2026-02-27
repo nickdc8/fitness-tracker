@@ -10,8 +10,7 @@ function getBaseName(fileName: string): string {
 }
 
 async function parseExcelFile(file: File): Promise<WorkoutProgram[]> {
-  const xlsxModule = await import("xlsx/xlsx.mjs");
-  const XLSX = (xlsxModule as { default?: typeof xlsxModule }).default ?? xlsxModule;
+  const XLSX = await import("xlsx/xlsx.mjs");
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const imported: WorkoutProgram[] = [];
