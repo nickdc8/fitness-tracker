@@ -11,6 +11,7 @@ export type ExerciseTemplate = {
 
 export type WorkoutExercise = ExerciseTemplate & {
   done: boolean;
+  skipped: boolean;
 };
 
 export type WorkoutSession = {
@@ -173,7 +174,7 @@ function buildExerciseTemplate(
 function buildDraftFromTemplate(template: ExerciseTemplate[]): DraftSession {
   return {
     id: createId(),
-    exercises: template.map((item) => ({ ...item, done: false })),
+    exercises: template.map((item) => ({ ...item, done: false, skipped: false })),
   };
 }
 

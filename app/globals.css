@@ -215,6 +215,11 @@ input[type="file"] {
   border-color: #b2d4c8;
 }
 
+.exercise-row.skipped {
+  background: #f9f2e8;
+  border-color: #ddc8a9;
+}
+
 .exercise-top {
   display: flex;
   justify-content: space-between;
@@ -239,6 +244,12 @@ input[type="file"] {
   font-size: 13px;
   color: #30473f;
   white-space: nowrap;
+}
+
+.status-toggles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .input-grid {

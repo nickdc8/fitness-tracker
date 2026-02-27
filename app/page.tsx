@@ -7,6 +7,7 @@ import {
   completeDraft,
   formatSessionDate,
   WorkoutAppData,
+  WorkoutExercise,
   WorkoutProgram,
 } from "@/lib/workout";
 
@@ -17,6 +18,14 @@ type CursorMap = Record<string, number>;
 const EMPTY_STATE: WorkoutAppData = {
   programs: [],
 };
+
+function normalizeExerciseStatus(exercise: WorkoutExercise): WorkoutExercise {
+  return {
+    ...exercise,
+    done: !!exercise.done,
+    skipped: !!exercise.skipped,
+  };
+}
 
 function safeLoad(): WorkoutAppData {
   if (typeof window === "undefined") {
@@ -34,7 +43,23 @@ function safeLoad(): WorkoutAppData {
       return EMPTY_STATE;
     }
 
-    return parsed;
+    return {
+      programs: parsed.programs.map((program) => ({
+        ...program,
+        draft: {
+          ...program.draft,
+          exercises: (program.draft?.exercises ?? []).map((exercise) =>
+            normalizeExerciseStatus(exercise as WorkoutExercise),
+          ),
+        },
+        sessions: (program.sessions ?? []).map((session) => ({
+          ...session,
+          exercises: (session.exercises ?? []).map((exercise) =>
+            normalizeExerciseStatus(exercise as WorkoutExercise),
+          ),
+        })),
+      })),
+    };
   } catch {
     return EMPTY_STATE;
   }
@@ -113,7 +138,8 @@ export default function Home() {
 
   const canGoBack = !!activeProgram && activeCursor > 0;
   const canGoForward = !!activeProgram && activeCursor < activeProgram.sessions.length;
-  const allDone = exerciseRows.length > 0 && exerciseRows.every((row) => row.done);
+  const allMarked =
+    exerciseRows.length > 0 && exerciseRows.every((row) => row.done || row.skipped);
 
   const updateProgram = (programId: string, updater: (program: WorkoutProgram) => WorkoutProgram) => {
     setData((current) => ({
@@ -235,6 +261,7 @@ export default function Home() {
             exercises: updateAtIndex(program.draft.exercises, exerciseIndex, (exercise) => ({
               ...exercise,
               done: !exercise.done,
+              skipped: exercise.done ? exercise.skipped : false,
             })),
           },
         };
@@ -247,6 +274,41 @@ export default function Home() {
           exercises: updateAtIndex(session.exercises, exerciseIndex, (exercise) => ({
             ...exercise,
             done: !exercise.done,
+            skipped: exercise.done ? exercise.skipped : false,
+          })),
+        })),
+      };
+    });
+  };
+
+  const toggleSkipped = (exerciseIndex: number) => {
+    if (!activeProgram) {
+      return;
+    }
+
+    updateProgram(activeProgram.id, (program) => {
+      if (onDraft) {
+        return {
+          ...program,
+          draft: {
+            ...program.draft,
+            exercises: updateAtIndex(program.draft.exercises, exerciseIndex, (exercise) => ({
+              ...exercise,
+              skipped: !exercise.skipped,
+              done: exercise.skipped ? exercise.done : false,
+            })),
+          },
+        };
+      }
+
+      return {
+        ...program,
+        sessions: updateAtIndex(program.sessions, activeCursor, (session) => ({
+          ...session,
+          exercises: updateAtIndex(session.exercises, exerciseIndex, (exercise) => ({
+            ...exercise,
+            skipped: !exercise.skipped,
+            done: exercise.skipped ? exercise.done : false,
           })),
         })),
       };
@@ -254,7 +316,7 @@ export default function Home() {
   };
 
   const completeWorkout = () => {
-    if (!activeProgram || !onDraft || !allDone) {
+    if (!activeProgram || !onDraft || !allMarked) {
       return;
     }
 
@@ -335,20 +397,39 @@ export default function Home() {
 
           <div className="exercise-list">
             {exerciseRows.map((exercise, index) => (
-              <article key={exercise.id} className={exercise.done ? "exercise-row done" : "exercise-row"}>
+              <article
+                key={exercise.id}
+                className={
+                  exercise.done
+                    ? "exercise-row done"
+                    : exercise.skipped
+                      ? "exercise-row skipped"
+                      : "exercise-row"
+                }
+              >
                 <div className="exercise-top">
                   <div>
                     <h3>{exercise.exercise}</h3>
                     <p>{exercise.muscleGroup || "General"}</p>
                   </div>
-                  <label className="done-toggle">
-                    <input
-                      type="checkbox"
-                      checked={exercise.done}
-                      onChange={() => toggleDone(index)}
-                    />
-                    Done
-                  </label>
+                  <div className="status-toggles">
+                    <label className="done-toggle">
+                      <input
+                        type="checkbox"
+                        checked={exercise.done}
+                        onChange={() => toggleDone(index)}
+                      />
+                      Done
+                    </label>
+                    <label className="done-toggle">
+                      <input
+                        type="checkbox"
+                        checked={exercise.skipped}
+                        onChange={() => toggleSkipped(index)}
+                      />
+                      Skipped
+                    </label>
+                  </div>
                 </div>
 
                 <div className="input-grid">
@@ -393,10 +474,12 @@ export default function Home() {
             <button
               type="button"
               className="complete-btn"
-              disabled={!allDone}
+              disabled={!allMarked}
               onClick={completeWorkout}
             >
-              {allDone ? "Complete & Archive Workout" : "Check off all exercises to complete"}
+              {allMarked
+                ? "Complete & Archive Workout"
+                : "Mark each exercise as Done or Skipped"}
             </button>
           ) : null}
 
@@ -409,7 +492,10 @@ export default function Home() {
                 .map((session) => (
                   <div key={session.id} className="archive-row">
                     <span>{formatSessionDate(session.completedAt)}</span>
-                    <span>{session.exercises.filter((item) => item.done).length}/{session.exercises.length} done</span>
+                    <span>
+                      {session.exercises.filter((item) => item.done).length} done,{" "}
+                      {session.exercises.filter((item) => item.skipped).length} skipped
+                    </span>
                   </div>
                 ))}
             </div>
