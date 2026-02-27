@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Workout Tracker",
   description: "Mobile workout tracker powered by CSV programs",
   manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon.svg" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
