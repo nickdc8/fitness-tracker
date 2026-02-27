@@ -39,6 +39,10 @@ export type WorkoutAppData = {
   programs: WorkoutProgram[];
 };
 
+type BuildCsvOptions = {
+  defaultProgramName?: string;
+};
+
 const HEADER_KEYS = {
   muscleGroup: ["muscle group", "muscle"],
   exercise: ["exercise", "movement"],
@@ -191,7 +195,11 @@ export function createProgramFromTemplate(
   };
 }
 
-export function buildProgramsFromCsv(fileName: string, csvText: string): WorkoutProgram[] {
+export function buildProgramsFromCsv(
+  fileName: string,
+  csvText: string,
+  options?: BuildCsvOptions,
+): WorkoutProgram[] {
   const rows = parseCsv(csvText);
   if (rows.length < 2) {
     throw new Error(`CSV ${fileName} does not have enough rows.`);
@@ -225,7 +233,8 @@ export function buildProgramsFromCsv(fileName: string, csvText: string): Workout
     }
 
     const rawKey = sheetIndex >= 0 ? cleanCell(row[sheetIndex]) : "";
-    const groupKey = rawKey || fileNameToProgramName(fileName);
+    const fallbackName = options?.defaultProgramName || fileNameToProgramName(fileName);
+    const groupKey = rawKey || fallbackName;
 
     if (!grouped.has(groupKey)) {
       grouped.set(groupKey, []);

@@ -2,8 +2,8 @@
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { PwaRegister } from "@/components/pwa-register";
+import { parseUploadedFile } from "@/lib/import-programs";
 import {
-  buildProgramsFromCsv,
   completeDraft,
   formatSessionDate,
   WorkoutAppData,
@@ -133,16 +133,10 @@ export default function Home() {
     const failures: string[] = [];
 
     for (const file of Array.from(files)) {
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        failures.push(`${file.name}: not a CSV file`);
-        continue;
-      }
-
       try {
-        const text = await file.text();
-        const programs = buildProgramsFromCsv(file.name, text);
+        const programs = await parseUploadedFile(file);
         if (!programs.length) {
-          failures.push(`${file.name}: no exercises found`);
+          failures.push(`${file.name}: no exercises found in the uploaded file`);
           continue;
         }
         imported.push(...programs);
@@ -286,10 +280,16 @@ export default function Home() {
 
       <section className="panel">
         <label className="upload-label" htmlFor="csv-upload">
-          <span>Upload CSV Program</span>
-          <small>Supports single or multiple CSV files</small>
+          <span>Upload Program File</span>
+          <small>Supports CSV or Excel (.xlsx/.xls)</small>
         </label>
-        <input id="csv-upload" type="file" accept=".csv,text/csv" multiple onChange={handleUpload} />
+        <input
+          id="csv-upload"
+          type="file"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          multiple
+          onChange={handleUpload}
+        />
         {error ? <p className="error-text">{error}</p> : null}
       </section>
 

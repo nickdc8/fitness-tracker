@@ -1,4 +1,4 @@
-const CACHE_NAME = "workout-tracker-v1";
+const CACHE_NAME = "workout-tracker-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -15,6 +15,16 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never cache Next.js runtime/chunk assets to avoid stale chunk errors.
+  if (url.pathname.startsWith("/_next/")) {
     return;
   }
 
