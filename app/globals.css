@@ -222,8 +222,8 @@ input[type="file"] {
 
 .exercise-top {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .exercise-top h3 {
